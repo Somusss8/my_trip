@@ -1,9 +1,17 @@
 const express = require('express');
-const path = require('path');
 const app = express();
 
 // Middleware to handle form data
 app.use(express.urlencoded({ extended: true }));
+
+// Country cost data
+const countryCosts = {
+  "India": 25,
+  "Japan": 35,
+  "France": 42,
+  "Australia": 50,
+  "USA": 62
+};
 
 // Serve the main page
 app.get('/', (req, res) => {
@@ -49,13 +57,11 @@ app.get('/', (req, res) => {
         </style>
       </head>
       <body>
-        <h1>My Trip Planner</h1>
+        <h1>🌍 My Trip Planner</h1>
         <form method="POST" action="/plan">
-          <label><input type="checkbox" name="countries" value="India"> India</label>
-          <label><input type="checkbox" name="countries" value="Japan"> Japan</label>
-          <label><input type="checkbox" name="countries" value="France"> France</label>
-          <label><input type="checkbox" name="countries" value="Australia"> Australia</label>
-          <label><input type="checkbox" name="countries" value="USA"> USA</label>
+          ${Object.keys(countryCosts).map(c => 
+            `<label><input type="checkbox" name="countries" value="${c}"> ${c}</label>`
+          ).join('')}
           <button type="submit">Plan Trip</button>
         </form>
       </body>
@@ -66,22 +72,31 @@ app.get('/', (req, res) => {
 // Handle the form submission
 app.post('/plan', (req, res) => {
   const selected = req.body.countries;
-  let message = '';
+  let html = '<h1>🌍 Trip Plan Result</h1>';
 
   if (!selected) {
-    message = '<p>No countries selected.</p>';
-  } else if (Array.isArray(selected)) {
-    message = `<p>You selected: <strong>${selected.join(', ')}</strong></p>`;
+    html += '<p>No countries selected.</p>';
   } else {
-    message = `<p>You selected: <strong>${selected}</strong></p>`;
+    // Make selected always an array
+    const selectedArray = Array.isArray(selected) ? selected : [selected];
+
+    html += '<ul style="list-style:none; padding:0;">';
+    let total = 0;
+    selectedArray.forEach(c => {
+      const cost = countryCosts[c] || 0;
+      total += cost;
+      html += `<li>${c} &nbsp;&nbsp; $${cost}</li>`;
+    });
+    html += '</ul>';
+    html += `<p><strong>Total Cost: $${total}</strong></p>`;
   }
+
+  html += '<a href="/">Go Back</a>';
 
   res.send(`
     <html>
-      <body style="text-align:center; font-family:Arial;">
-        <h1>Trip Plan Result</h1>
-        ${message}
-        <a href="/">Go Back</a>
+      <body style="text-align:center; font-family:Arial; padding:40px;">
+        ${html}
       </body>
     </html>
   `);
@@ -89,5 +104,6 @@ app.post('/plan', (req, res) => {
 
 const PORT = 3000;
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server is running on http://localhost:\${PORT}`);
+  console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });
+
